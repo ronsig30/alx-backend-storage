@@ -1,0 +1,3 @@
+// my comment
+var count = db.school.countDocuments();
+print(count);
