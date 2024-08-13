@@ -1,0 +1,3 @@
+// my comment
+var result = db.school.deleteMany({ name: "Holberton school" });
+print(`{ "acknowledged" : ${result.acknowledged}, "deletedCount" : ${result.deletedCount} }`);
