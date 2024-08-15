@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
-Cache module for storing data in Redis and counting method calls.
+Cache module for storing data in Redis, counting method calls, and tracking cal
+l history.
 """
 
 import redis
@@ -40,6 +41,44 @@ def count_calls(method: Callable) -> Callable:
     return wrapper
 
 
+def call_history(method: Callable) -> Callable:
+    """
+    Decorator to store the history of inputs and outputs for a method.
+
+    Args:
+        method (Callable): The method to wrap.
+
+    Returns:
+        Callable: The wrapped method that stores input/output history.
+    """
+
+    @wraps(method)
+    def wrapper(self, *args, **kwargs):
+        """
+        Wrapper function that stores input and output history in Redis.
+
+        Args:
+            *args: Positional arguments for the original method.
+            **kwargs: Keyword arguments for the original method.
+
+        Returns:
+            Any: The return value of the original method.
+        """
+        input_key = f"{method.__qualname__}:inputs"
+        output_key = f"{method.__qualname__}:outputs"
+
+        # Store the input arguments in the inputs list
+        self._redis.rpush(input_key, str(args))
+
+        # Execute the original method and store the output in the outputs list
+        output = method(self, *args, **kwargs)
+        self._redis.rpush(output_key, str(output))
+
+        return output
+
+    return wrapper
+
+
 class Cache:
     """Cache class for interacting with Redis."""
 
@@ -49,6 +88,7 @@ class Cache:
         self._redis.flushdb()
 
     @count_calls
+    @call_history
     def store(self, data: Union[str, bytes, int, float]) -> str:
         """
         Store data in Redis with a random key and return the key.
