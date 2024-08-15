@@ -134,6 +134,30 @@ class Cache:
         """
         return self.get(key, fn=lambda d: d.decode("utf-8"))
 
+    def replay(method: Callable) -> None:
+        """
+        Display the history of calls to a given method.
+
+        Args:
+            method (Callable): The method whose call history should be displaye
+            d.
+        """
+        # Create the Redis keys for inputs and outputs
+        redis_client = redis.Redis()
+        input_key = f"{method.__qualname__}:inputs"
+        output_key = f"{method.__qualname__}:outputs"
+
+        # Retrieve inputs and outputs from Redis
+        inputs = redis_client.lrange(input_key, 0, -1)
+        outputs = redis_client.lrange(output_key, 0, -1)
+
+        # Print the number of times the method was called
+        print(f"{method.__qualname__} was called {len(inputs)} times:")
+
+        # Loop through the inputs and outputs and print them
+        for input_data, output_data in zip(inputs, outputs):
+            print(f"{method.__qualname__}(*{input_data.decode('utf-8')}) -> {output_data.decode('utf-8')}")
+
     def get_int(self, key: str) -> Optional[int]:
         """
         Retrieve an integer from Redis.
